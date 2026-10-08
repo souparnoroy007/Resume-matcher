@@ -1,21 +1,10 @@
-"""
-Resume vs Job Description Matcher
-Built with: Streamlit (web interface) + plain Python (re, collections)
-Optional: pypdf (only needed if you want to upload a PDF resume)
-
-Run it with:  python -m streamlit run resume_matcher.py
-"""
-
 import re
 from collections import Counter
 
 import streamlit as st
 
-# ----------------------------------------------------------------------
-# 1. WORD LISTS
-# ----------------------------------------------------------------------
-# Skills we look for. Multi-word skills like "machine learning" are fine.
-# Add your own skills here and the app will start detecting them.
+
+#WORD LISTS
 SKILLS = [
     "python", "java", "javascript", "typescript", "c++", "c#", "php", "kotlin", "swift",
     "sql", "mysql", "postgresql", "mongodb", "sqlite",
@@ -32,7 +21,7 @@ SKILLS = [
     "time management", "project management",
 ]
 
-# Common words that say nothing about skills. We ignore these.
+
 STOPWORDS = set(
     """
     a about above after all also an and any are as at be been being but by can could do does
@@ -83,9 +72,9 @@ Experience
 Member of the college coding club. Helped organise coding workshops for students."""
 
 
-# ----------------------------------------------------------------------
-# 2. TEXT HELPERS
-# ----------------------------------------------------------------------
+
+# TEXT HELPERS
+
 def normalise(word):
     """Very simple plural fix: 'projects' -> 'project'."""
     if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "is", "us", "ics")):
@@ -109,8 +98,6 @@ def find_skills(text):
     text = text.lower()
     found = set()
     for skill in SKILLS:
-        # The (?<!...) and (?!...) parts make sure we match whole words only,
-        # so "java" does not match inside "javascript".
         pattern = r"(?<![a-z0-9+#])" + re.escape(skill) + r"(?![a-z0-9+#])"
         if re.search(pattern, text):
             found.add(skill)
@@ -130,18 +117,18 @@ def read_pdf(file):
         return ""
 
 
-# ----------------------------------------------------------------------
-# 3. MATCHING LOGIC
-# ----------------------------------------------------------------------
+
+#MATCHING LOGIC
+
 def analyse(resume, job):
     """Compare the resume with the job description and return a dictionary of results."""
-    # Step 1: skills (from our SKILLS list)
+ 
     job_skills = find_skills(job)
     resume_skills = find_skills(resume)
     matched_skills = sorted(job_skills & resume_skills)
     missing_skills = sorted(job_skills - resume_skills)
 
-    # Step 2: other important words (the most repeated words in the job description)
+
     skill_words = {normalise(w) for s in job_skills for w in re.findall(r"[a-z]+", s)}
     counts = Counter(w for w in get_words(job) if w not in skill_words)
     job_keywords = [w for w, c in counts.most_common(20) if c >= 2]
@@ -149,7 +136,7 @@ def analyse(resume, job):
     matched_keywords = [w for w in job_keywords if w in resume_words]
     missing_keywords = [w for w in job_keywords if w not in resume_words]
 
-    # Step 3: score. Skills count double because they matter more than other words.
+   
     total = len(job_skills) * 2 + len(job_keywords)
     earned = len(matched_skills) * 2 + len(matched_keywords)
     score = round(earned / total * 100) if total else None
@@ -186,9 +173,9 @@ def chips(words, bg, fg):
     return " ".join(f"<span style='{style}'>{w}</span>" for w in words)
 
 
-# ----------------------------------------------------------------------
-# 4. USER INTERFACE
-# ----------------------------------------------------------------------
+
+#USER INTERFACE
+
 st.set_page_config(page_title="Resume Matcher", page_icon="📄", layout="wide")
 st.title("📄 Resume vs Job Description Matcher")
 st.write(
@@ -214,7 +201,7 @@ with col2:
     st.subheader("Job description")
     jd_text = st.text_area("Paste the job description", key="jd_text", height=300)
 
-# If a PDF was uploaded, use its text instead of the pasted text
+
 resume = resume_text
 if pdf_file is not None:
     pdf_text = read_pdf(pdf_file)
